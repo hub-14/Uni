@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-100" id="html-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UniFix - Campus Management System</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff', 100: '#e0effe', 500: '#2563eb', 600: '#1d4ed8', 700: '#1e40af', 900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        body, header, div, button, input, textarea, select {
+            transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 dark:text-slate-100 font-sans flex flex-col antialiased bg-slate-100 dark:bg-slate-900 select-none overflow-x-hidden">
+
+    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none w-11/12 max-w-sm"></div>
+
+    <!-- MAIN APP HEADER -->
+    <header class="bg-brand-900 dark:bg-slate-950 text-white shadow-md sticky top-0 z-40 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl overflow-hidden shadow-md flex items-center justify-center bg-blue-900 border border-amber-500/30 text-amber-400">
+                    <i class="fa-solid fa-screwdriver-wrench text-xs"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-extrabold tracking-tight leading-none text-white flex items-center gap-1.5">
+                        UNIFIX
+                    </h1>
+                    <p class="text-[9px] text-brand-100 opacity-80 mt-0.5">Campus Management System</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <span id="role-indicator" class="text-[9px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-1 rounded-lg font-bold flex items-center gap-1">
+                    <i class="fa-solid fa-lock"></i> Portal Gateway
+                </span>
+                <button id="btn-switch-role" onclick="showGatewayScreen()" class="hidden text-[10px] bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-lg text-amber-300 font-bold border border-white/10 transition">
+                    <i class="fa-solid fa-right-from-bracket"></i> Switch Portal
+                </button>
+                <button onclick="toggleDarkMode()" class="p-2 bg-white/10 hover:bg-white/20 active:scale-95 text-white rounded-xl text-xs transition flex items-center justify-center w-8 h-8 border border-white/10" title="Toggle Theme">
+                    <i id="theme-icon" class="fa-solid fa-moon text-amber-300 text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 pb-32">
+       
+        <!-- STEP 0: INITIAL ROLE SELECTION GATEWAY -->
+        <div id="view-gateway" class="max-w-md mx-auto my-8 space-y-6 text-center">
+            <div class="space-y-2">
+                <div class="w-16 h-16 bg-brand-600 text-white rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-lg border-2 border-brand-400">
+                    <i class="fa-solid fa-building-columns"></i>
+                </div>
+                <h2 class="text-xl font-extrabold text-slate-800 dark:text-slate-100">Welcome to UniFix</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">Select your campus role to access your dedicated portal.</p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4">
+                <!-- STUDENT PORTAL SELECTION CARD -->
+                <button onclick="loginAsStudent()" class="p-5 bg-white dark:bg-slate-800 hover:border-brand-500 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-left shadow-sm hover:shadow-md transition group flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition">
+                            <i class="fa-solid fa-user-graduate"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Student Portal</h3>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Register defects & track live fix progress</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-400 group-hover:text-brand-600 transition"></i>
+                </button>
+
+                <!-- FACULTY PORTAL SELECTION CARD (PIN GUARDED) -->
+                <button onclick="openFacultyAuthModal()" class="p-5 bg-white dark:bg-slate-800 hover:border-amber-500 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-left shadow-sm hover:shadow-md transition group flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                Faculty & Admin Dashboard
+                                <i class="fa-solid fa-lock text-amber-500 text-xs"></i>
+                            </h3>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Approve complaints & update work progress</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-400 group-hover:text-amber-500 transition"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- VIEW 1: STUDENT PORTAL (REGISTER ONLY) -->
+        <div id="view-student" class="hidden space-y-6">
+            <div class="bg-gradient-to-r from-brand-600 to-indigo-700 rounded-2xl p-4 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div class="space-y-1">
+                    <h2 class="text-base font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-amber-300"></i> Smart Incident Management
+                    </h2>
+                    <p class="text-brand-100 text-[11px] max-w-2xl leading-relaxed">
+                        Report maintenance defects with real-time progress tracking and priority ETAs.
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div id="report-section" class="lg:col-span-5 space-y-4">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm p-4 sm:p-6 space-y-4">
+                        <div class="border-b border-slate-100 dark:border-slate-700 pb-3 flex items-center justify-between">
+                            <div>
+                                <h2 class="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                    <i class="fa-solid fa-pen-to-square text-brand-600 dark:text-brand-400"></i> Register Complaint
+                                </h2>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400">Submit details for prompt facility fix</p>
+                            </div>
+                        </div>
+
+                        <form id="complaint-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                                    Problem Category <span class="text-rose-500">*</span>
+                                </label>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" id="category-chips"></div>
+                                <input type="hidden" id="input-category" required>
+
+                                <!-- DYNAMIC OTHER CATEGORY INPUT -->
+                                <div id="other-category-container" class="hidden mt-2.5">
+                                    <label for="input-other-category" class="block text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">
+                                        Specify Other Issue Category <span class="text-rose-500">*</span>
+                                    </label>
+                                    <input type="text" id="input-other-category" placeholder="e.g. Broken Door, Window, AC..."
+                                        class="w-full px-3 py-2 bg-amber-50/50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500 transition">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="input-location" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                                    Room / Building Location <span class="text-rose-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                        <i class="fa-solid fa-location-dot text-xs"></i>
+                                    </span>
+                                    <input type="text" id="input-location" placeholder="e.g. AB-1, Room 204..." required
+                                        class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
+                                </div>
+                            </div>
+
+                            <!-- PRIORITY LEVEL & ETA -->
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                                    Priority Level & Estimated ETA
+                                </label>
+                                <div class="grid grid-cols-4 gap-1.5">
+                                    <label class="cursor-pointer" onclick="updateEtaNotice('Low')">
+                                        <input type="radio" name="priority" value="Low" class="peer sr-only">
+                                        <div class="text-center py-2 px-1 text-[10px] font-medium rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-950/40 peer-checked:text-emerald-700 dark:peer-checked:text-emerald-400 transition">Low</div>
+                                    </label>
+                                    <label class="cursor-pointer" onclick="updateEtaNotice('Medium')">
+                                        <input type="radio" name="priority" value="Medium" checked class="peer sr-only">
+                                        <div class="text-center py-2 px-1 text-[10px] font-medium rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 peer-checked:border-amber-500 peer-checked:bg-amber-50 dark:peer-checked:bg-amber-950/40 peer-checked:text-amber-700 dark:peer-checked:text-amber-400 transition">Medium</div>
+                                    </label>
+                                    <label class="cursor-pointer" onclick="updateEtaNotice('High')">
+                                        <input type="radio" name="priority" value="High" class="peer sr-only">
+                                        <div class="text-center py-2 px-1 text-[10px] font-medium rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 peer-checked:border-rose-500 peer-checked:bg-rose-50 dark:peer-checked:bg-rose-950/40 peer-checked:text-rose-700 dark:peer-checked:text-rose-400 transition">High</div>
+                                    </label>
+                                    <label class="cursor-pointer" onclick="updateEtaNotice('Emergency')">
+                                        <input type="radio" name="priority" value="Emergency" class="peer sr-only">
+                                        <div class="text-center py-2 px-1 text-[10px] font-bold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 peer-checked:border-red-600 peer-checked:bg-red-100 dark:peer-checked:bg-red-950/60 peer-checked:text-red-800 dark:peer-checked:text-red-300 transition">Emergency</div>
+                                    </label>
+                                </div>
+                                <p id="eta-badge-text" class="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1 font-medium">
+                                    <i class="fa-regular fa-clock text-brand-500"></i> Estimated Fix Time: <strong>~24 - 48 Hours</strong>
+                                </p>
+                            </div>
+
+                            <div>
+                                <label for="input-description" class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                                    Issue Description <span class="text-rose-500">*</span>
+                                </label>
+                                <textarea id="input-description" rows="3" required placeholder="Provide clear details..."
+                                    class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"></textarea>
+                            </div>
+
+                            <!-- PHOTO ATTACHMENT -->
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Photo Attachment (Optional)</label>
+                                <div id="drop-zone" class="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-brand-500 bg-slate-50 dark:bg-slate-900 rounded-xl p-3 text-center cursor-pointer transition relative">
+                                    <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                                    <div id="upload-prompt" class="space-y-1">
+                                        <i class="fa-solid fa-cloud-arrow-up text-xl text-slate-400"></i>
+                                        <p class="text-xs text-slate-600 dark:text-slate-300 font-medium">Upload or snap photo</p>
+                                        <p class="text-[9px] text-slate-400">PNG, JPG up to 5MB</p>
+                                    </div>
+                                    <div id="preview-container" class="hidden relative inline-block">
+                                        <img id="img-preview" src="" alt="Preview" class="h-24 w-auto rounded-lg shadow-sm border border-slate-200 object-cover">
+                                        <button type="button" onclick="removePhoto(event)" class="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 text-xs shadow hover:bg-rose-600 transition">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full py-3 px-4 bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold rounded-xl shadow-md transition duration-150 flex items-center justify-center space-x-2 text-xs uppercase tracking-wider">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>SUBMIT COMPLAINT</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-3 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-2">
+                        <div class="relative w-full sm:w-48">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                            <input type="text" id="student-search" oninput="renderStudentComplaints()" placeholder="Search ID, location..."
+                                class="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+
+                        <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-xl text-[11px] font-medium space-x-1 w-full sm:w-auto overflow-x-auto">
+                            <button onclick="setStudentFilter('All')" id="filter-All" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-xs font-bold">All Active</button>
+                            <button onclick="setStudentFilter('Submitted')" id="filter-Submitted" class="px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900">Submitted</button>
+                            <button onclick="setStudentFilter('Approved')" id="filter-Approved" class="px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900">Approved</button>
+                            <button onclick="setStudentFilter('In Progress')" id="filter-In Progress" class="px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900">In Progress</button>
+                            <button onclick="setStudentFilter('Resolved')" id="filter-Resolved" class="px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900">Resolved Log</button>
+                        </div>
+                    </div>
+
+                    <div id="student-complaints-list" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: FACULTY / STAFF DASHBOARD -->
+        <div id="view-staff" class="hidden space-y-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex items-center space-x-3">
+                    <div class="p-2.5 bg-brand-50 dark:bg-brand-950/50 text-brand-600 dark:text-brand-400 rounded-xl"><i class="fa-solid fa-list-check text-lg"></i></div>
+                    <div>
+                        <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Active Queue</p>
+                        <p id="stat-total" class="text-lg font-extrabold text-slate-800 dark:text-slate-100">0</p>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex items-center space-x-3">
+                    <div class="p-2.5 bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 rounded-xl"><i class="fa-solid fa-hourglass-half text-lg"></i></div>
+                    <div>
+                        <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Pending</p>
+                        <p id="stat-pending" class="text-lg font-extrabold text-amber-600">0</p>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex items-center space-x-3">
+                    <div class="p-2.5 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-xl"><i class="fa-solid fa-wrench text-lg"></i></div>
+                    <div>
+                        <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">In Progress</p>
+                        <p id="stat-progress" class="text-lg font-extrabold text-blue-600">0</p>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex items-center space-x-3">
+                    <div class="p-2.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-xl"><i class="fa-solid fa-circle-check text-lg"></i></div>
+                    <div>
+                        <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Resolved Log (&lt;7d)</p>
+                        <p id="stat-resolved" class="text-lg font-extrabold text-emerald-600">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACTIVE QUEUE LIST -->
+            <div class="space-y-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1"><i class="fa-solid fa-list-ul text-brand-600"></i> Active Maintenance Queue</h3>
+                <div id="staff-complaints-list" class="space-y-3"></div>
+            </div>
+
+            <!-- RESOLVED ARCHIVE ACCORDION -->
+            <div class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                <button onclick="toggleResolvedArchive()" class="w-full flex items-center justify-between p-3.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-750 transition">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-box-archive text-emerald-600"></i> Recently Resolved Log (<span id="resolved-count">0</span>) - Auto-Purges After 7 Days
+                    </span>
+                    <i id="archive-chevron" class="fa-solid fa-chevron-down text-slate-400 transition-transform"></i>
+                </button>
+                <div id="resolved-archive-container" class="hidden space-y-3 pt-1"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FACULTY AUTH MODAL -->
+    <div id="modal-auth" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-700 text-center">
+            <div class="w-12 h-12 bg-amber-100 dark:bg-amber-950 text-amber-600 rounded-full flex items-center justify-center mx-auto text-lg">
+                <i class="fa-solid fa-user-shield"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Faculty Authorization Required</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Enter password to access approval dashboard</p>
+            </div>
+            <input type="password" id="faculty-pin-input" placeholder="Enter PIN (Default: admin123)"
+                class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-center font-mono focus:outline-none focus:ring-2 focus:ring-brand-500">
+            <div class="space-y-2 pt-1">
+                <button onclick="verifyFacultyPin()" class="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition">
+                    Authenticate Session
+                </button>
+                <button onclick="closeAuthModal()" class="w-full py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-medium">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CATEGORIES = [
+            { id: 'Electrical', label: 'Electrical', icon: 'fa-bolt' },
+            { id: 'Plumbing', label: 'Plumbing', icon: 'fa-droplet' },
+            { id: 'Furniture', label: 'Furniture', icon: 'fa-chair' },
+            { id: 'IT/Network', label: 'IT / Network', icon: 'fa-wifi' },
+            { id: 'Cleanliness', label: 'Cleanliness', icon: 'fa-broom' },
+            { id: 'Other', label: 'Other...', icon: 'fa-ellipsis' }
+        ];
+
+        let complaints = [];
+        let selectedCategory = '';
+        let uploadedPhotoData = '';
+        let currentStudentFilter = 'All';
+
+        function toggleDarkMode() {
+            const html = document.getElementById('html-root');
+            const icon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.className = "fa-solid fa-moon text-amber-300 text-xs";
+            } else {
+                html.classList.add('dark');
+                icon.className = "fa-solid fa-sun text-amber-300 text-xs";
+            }
+        }
+
+        window.onload = function() {
+            loadData();
+            renderCategoryChips();
+            showGatewayScreen();
+        };
+
+        function loadData() {
+            const saved = localStorage.getItem('unifix_data');
+            let rawComplaints = [];
+
+            if (saved) {
+                rawComplaints = JSON.parse(saved);
+            } else {
+                const now = Date.now();
+                rawComplaints = [
+                    { id: 101, category: 'Electrical', location: 'AB-1, Room 204', priority: 'High', description: 'Flickering LED tube light and sparking switchboard near the podium.', photo: '', status: 'Submitted', date: new Date().toLocaleDateString(), timestamp: now },
+                    { id: 102, category: 'Plumbing', location: 'Hostel Block 3, 1st Floor Washroom', priority: 'Emergency', description: 'Major water leakage from main washbasin supply pipe flooding the corridor.', photo: '', status: 'In Progress', date: new Date().toLocaleDateString(), timestamp: now },
+                    { id: 103, category: 'Other (Broken Door Latch)', location: 'Lecture Hall 2', priority: 'Medium', description: 'Entrance door lock latch is jammed and difficult to close properly.', photo: '', status: 'Approved', date: new Date().toLocaleDateString(), timestamp: now },
+                    { id: 104, category: 'IT/Network', location: 'Digital Library, Wing B', priority: 'High', description: 'Campus Wi-Fi router node is offline; desktop terminals have no internet access.', photo: '', status: 'Submitted', date: new Date().toLocaleDateString(), timestamp: now },
+                    { id: 105, category: 'Furniture', location: 'AB-2, Lab 102', priority: 'Low', description: 'Two wooden lab stools have loose legs and need tightening.', photo: '', status: 'Resolved', date: new Date().toLocaleDateString(), timestamp: now - (2 * 24 * 60 * 60 * 1000), resolvedTimestamp: now - (2 * 24 * 60 * 60 * 1000) }
+                ];
+            }
+
+            // AUTO-PURGE: Filter out resolved complaints older than 7 days
+            const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+            const currentTime = Date.now();
+
+            complaints = rawComplaints.filter(c => {
+                if (c.status === 'Resolved') {
+                    const resolvedTime = c.resolvedTimestamp || c.timestamp || currentTime;
+                    return (currentTime - resolvedTime) < SEVEN_DAYS_MS;
+                }
+                return true;
+            });
+
+            saveData();
+        }
+
+        function saveData() {
+            localStorage.setItem('unifix_data', JSON.stringify(complaints));
+        }
+
+        function showGatewayScreen() {
+            document.getElementById('view-gateway').classList.remove('hidden');
+            document.getElementById('view-student').classList.add('hidden');
+            document.getElementById('view-staff').classList.add('hidden');
+            document.getElementById('btn-switch-role').classList.add('hidden');
+            document.getElementById('role-indicator').innerHTML = `<i class="fa-solid fa-lock"></i> Portal Gateway`;
+        }
+
+        function loginAsStudent() {
+            document.getElementById('view-gateway').classList.add('hidden');
+            document.getElementById('view-student').classList.remove('hidden');
+            document.getElementById('view-staff').classList.add('hidden');
+            document.getElementById('btn-switch-role').classList.remove('hidden');
+            document.getElementById('role-indicator').innerHTML = `<i class="fa-solid fa-user-graduate"></i> Student View`;
+            renderStudentComplaints();
+            showToast('Logged in to Student Portal', 'success');
+        }
+
+        function openFacultyAuthModal() {
+            document.getElementById('modal-auth').classList.remove('hidden');
+            document.getElementById('faculty-pin-input').focus();
+        }
+
+        function closeAuthModal() {
+            document.getElementById('modal-auth').classList.add('hidden');
+        }
+
+        function verifyFacultyPin() {
+            const input = document.getElementById('faculty-pin-input').value;
+            if (input === 'admin123') {
+                closeAuthModal();
+                document.getElementById('faculty-pin-input').value = '';
+                document.getElementById('view-gateway').classList.add('hidden');
+                document.getElementById('view-student').classList.add('hidden');
+                document.getElementById('view-staff').classList.remove('hidden');
+                document.getElementById('btn-switch-role').classList.remove('hidden');
+                document.getElementById('role-indicator').innerHTML = `<i class="fa-solid fa-user-shield"></i> Faculty Admin`;
+                renderStaffComplaints();
+                updateStats();
+                showToast('Authenticated Faculty Session', 'success');
+            } else {
+                showToast('Invalid Faculty Access PIN', 'error');
+            }
+        }
+
+        function renderCategoryChips() {
+            const container = document.getElementById('category-chips');
+            container.innerHTML = CATEGORIES.map(cat => `
+                <button type="button" onclick="selectCategory('${cat.id}')" id="chip-${cat.id.replace(/[^a-zA-Z]/g, '')}"
+                    class="category-chip text-left p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 transition flex items-center space-x-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+                    <i class="fa-solid ${cat.icon} text-brand-600 text-xs"></i>
+                    <span class="truncate text-[11px]">${cat.label}</span>
+                </button>
+            `).join('');
+        }
+
+        function selectCategory(catId) {
+            selectedCategory = catId;
+            document.getElementById('input-category').value = catId;
+
+            const otherContainer = document.getElementById('other-category-container');
+            const otherInput = document.getElementById('input-other-category');
+
+            if (catId === 'Other') {
+                otherContainer.classList.remove('hidden');
+                otherInput.required = true;
+                otherInput.focus();
+            } else {
+                otherContainer.classList.add('hidden');
+                otherInput.required = false;
+                otherInput.value = '';
+            }
+
+            document.querySelectorAll('.category-chip').forEach(el => {
+                el.classList.remove('border-brand-600', 'bg-brand-50');
+            });
+            const cleanId = catId.replace(/[^a-zA-Z]/g, '');
+            document.getElementById(`chip-${cleanId}`).classList.add('border-brand-600', 'bg-brand-50');
+        }
+
+        function updateEtaNotice(priority) {
+            const etaEl = document.getElementById('eta-badge-text');
+            let eta = '~24 - 48 Hours';
+            if (priority === 'Emergency') eta = '~1 - 2 Hours';
+            else if (priority === 'High') eta = '~6 - 12 Hours';
+            else if (priority === 'Low') eta = '~3 - 5 Days';
+
+            etaEl.innerHTML = `<i class="fa-regular fa-clock text-brand-500"></i> Estimated Fix Time: <strong>${eta}</strong>`;
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedPhotoData = e.target.result;
+                    document.getElementById('img-preview').src = uploadedPhotoData;
+                    document.getElementById('upload-prompt').classList.add('hidden');
+                    document.getElementById('preview-container').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removePhoto(e) {
+            e.stopPropagation();
+            uploadedPhotoData = '';
+            document.getElementById('file-input').value = '';
+            document.getElementById('upload-prompt').classList.remove('hidden');
+            document.getElementById('preview-container').classList.add('hidden');
+        }
+
+        document.getElementById('drop-zone').addEventListener('click', () => document.getElementById('file-input').click());
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            if (!selectedCategory) {
+                showToast('Select a category', 'error');
+                return;
+            }
+
+            let finalCategoryName = selectedCategory;
+            if (selectedCategory === 'Other') {
+                const customVal = document.getElementById('input-other-category').value.trim();
+                if (!customVal) {
+                    showToast('Please specify the issue category', 'error');
+                    return;
+                }
+                finalCategoryName = `Other (${customVal})`;
+            }
+
+            const priority = document.querySelector('input[name="priority"]:checked').value;
+            const nextId = complaints.length > 0 ? Math.max(...complaints.map(c => c.id)) + 1 : 101;
+           
+            const newComplaint = {
+                id: nextId,
+                category: finalCategoryName,
+                location: document.getElementById('input-location').value.trim(),
+                priority: priority,
+                description: document.getElementById('input-description').value.trim(),
+                photo: uploadedPhotoData || '',
+                status: 'Submitted',
+                date: new Date().toLocaleDateString(),
+                timestamp: Date.now()
+            };
+
+            complaints.unshift(newComplaint);
+            saveData();
+           
+            document.getElementById('complaint-form').reset();
+            selectedCategory = '';
+            uploadedPhotoData = '';
+            document.getElementById('other-category-container').classList.add('hidden');
+            document.getElementById('upload-prompt').classList.remove('hidden');
+            document.getElementById('preview-container').classList.add('hidden');
+            renderCategoryChips();
+            updateEtaNotice('Medium');
+
+            renderStudentComplaints();
+            showToast(`Complaint #${nextId} Logged Successfully!`, 'success');
+        }
+
+        function setStudentFilter(status) {
+            currentStudentFilter = status;
+            ['All', 'Submitted', 'Approved', 'In Progress', 'Resolved'].forEach(s => {
+                const btn = document.getElementById(`filter-${s}`);
+                if (btn) {
+                    btn.className = (s === status)
+                        ? "px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-xs font-bold"
+                        : "px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900";
+                }
+            });
+            renderStudentComplaints();
+        }
+
+        function getProgressBarHtml(status) {
+            const stages = ['Submitted', 'Approved', 'In Progress', 'Resolved'];
+            const currentIndex = stages.indexOf(status);
+           
+            return `
+                <div class="space-y-1 pt-2 border-t border-slate-100 dark:border-slate-700">
+                    <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        <span>Submitted</span>
+                        <span>Approved</span>
+                        <span>In Progress</span>
+                        <span>Resolved</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div class="${currentIndex >= 0 ? 'bg-brand-600' : 'bg-slate-200'} rounded-l-full transition-all"></div>
+                        <div class="${currentIndex >= 1 ? 'bg-amber-500' : 'bg-slate-200'} transition-all"></div>
+                        <div class="${currentIndex >= 2 ? 'bg-blue-600' : 'bg-slate-200'} transition-all"></div>
+                        <div class="${currentIndex >= 3 ? 'bg-emerald-600' : 'bg-slate-200'} rounded-r-full transition-all"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStudentComplaints() {
+            loadData();
+            const container = document.getElementById('student-complaints-list');
+            const searchVal = document.getElementById('student-search').value.toLowerCase().trim();
+           
+            let displayList = complaints;
+
+            if (currentStudentFilter === 'All') {
+                displayList = complaints.filter(c => c.status !== 'Resolved');
+            } else if (currentStudentFilter === 'Resolved') {
+                displayList = complaints.filter(c => c.status === 'Resolved');
+            } else {
+                displayList = complaints.filter(c => c.status === currentStudentFilter);
+            }
+
+            if (searchVal) {
+                displayList = displayList.filter(c =>
+                    c.id.toString().includes(searchVal) ||
+                    c.location.toLowerCase().includes(searchVal) ||
+                    c.description.toLowerCase().includes(searchVal) ||
+                    c.category.toLowerCase().includes(searchVal)
+                );
+            }
+
+            if (displayList.length === 0) {
+                container.innerHTML = `<div class="p-6 bg-white dark:bg-slate-800 rounded-2xl text-center text-xs text-slate-400">No complaints found. Resolved items auto-purge after 7 days.</div>`;
+                return;
+            }
+
+            container.innerHTML = displayList.map(c => `
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 border ${c.status === 'Resolved' ? 'border-emerald-300 dark:border-emerald-900/60' : 'border-slate-200 dark:border-slate-700'} space-y-3 shadow-xs">
+                    <div class="flex justify-between items-center text-xs border-b border-slate-100 dark:border-slate-700 pb-2">
+                        <span class="font-bold text-slate-800 dark:text-slate-100">#${c.id} - ${c.location}</span>
+                        <div class="flex items-center gap-2">
+                            ${c.status === 'Resolved' ? '<span class="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[9px] font-bold rounded"><i class="fa-solid fa-circle-check"></i> Resolved</span>' : getPriorityBadge(c.priority)}
+                            <span class="text-slate-400 text-[10px]">${c.date}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        ${c.photo ? `<img src="${c.photo}" alt="Pic" class="w-16 h-16 object-cover rounded-lg border border-slate-200 flex-shrink-0">` : ''}
+                        <div class="space-y-1 flex-1">
+                            <p class="text-[11px] font-semibold text-brand-600 dark:text-brand-400"><i class="fa-solid fa-tag"></i> ${c.category}</p>
+                            <p class="text-xs text-slate-600 dark:text-slate-300">${c.description}</p>
+                        </div>
+                    </div>
+                    ${getProgressBarHtml(c.status)}
+                </div>
+            `).join('');
+        }
+
+        function renderStaffComplaints() {
+            loadData();
+            const activeContainer = document.getElementById('staff-complaints-list');
+            const archiveContainer = document.getElementById('resolved-archive-container');
+           
+            const activeList = complaints.filter(c => c.status !== 'Resolved');
+            const resolvedList = complaints.filter(c => c.status === 'Resolved');
+
+            document.getElementById('resolved-count').innerText = resolvedList.length;
+
+            if (activeList.length === 0) {
+                activeContainer.innerHTML = `<div class="p-6 bg-white dark:bg-slate-800 rounded-2xl text-center text-xs text-slate-400">No active complaints in the queue. All clear!</div>`;
+            } else {
+                activeContainer.innerHTML = activeList.map(c => {
+                    let action = '';
+                    if (c.status === 'Submitted') action = `<button onclick="updateStatus(${c.id}, 'Approved')" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-[10px] transition"><i class="fa-solid fa-thumbs-up"></i> Approve</button>`;
+                    else if (c.status === 'Approved') action = `<button onclick="updateStatus(${c.id}, 'In Progress')" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-[10px] transition"><i class="fa-solid fa-wrench"></i> Start Fix</button>`;
+                    else if (c.status === 'In Progress') action = `<button onclick="updateStatus(${c.id}, 'Resolved')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[10px] transition"><i class="fa-solid fa-check"></i> Mark Resolved</button>`;
+
+                    return `
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 flex justify-between items-center gap-2 shadow-xs">
+                            <div class="flex items-start gap-3">
+                                ${c.photo ? `<img src="${c.photo}" alt="Pic" class="w-12 h-12 object-cover rounded-lg border flex-shrink-0">` : ''}
+                                <div class="space-y-0.5">
+                                    <div class="flex items-center gap-2">
+                                        <p class="font-bold text-xs text-slate-800 dark:text-slate-100">#${c.id} - ${c.location}</p>
+                                        ${getPriorityBadge(c.priority)}
+                                    </div>
+                                    <p class="text-[10px] font-semibold text-brand-600 dark:text-brand-400">${c.category}</p>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400">${c.description}</p>
+                                    <p class="text-[10px] font-bold text-amber-600 dark:text-amber-400 pt-1">Stage: ${c.status}</p>
+                                </div>
+                            </div>
+                            <div>${action}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            if (resolvedList.length === 0) {
+                archiveContainer.innerHTML = `<div class="p-4 bg-white dark:bg-slate-800 rounded-xl text-center text-xs text-slate-400">No recently resolved items. Items auto-delete after 7 days.</div>`;
+            } else {
+                archiveContainer.innerHTML = resolvedList.map(c => `
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-3 border border-emerald-200 dark:border-emerald-900/50 flex justify-between items-center text-xs">
+                        <div>
+                            <span class="font-bold text-slate-800 dark:text-slate-100">#${c.id} - ${c.location}</span>
+                            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold ml-2"><i class="fa-solid fa-circle-check"></i> Resolved</span>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-xs">${c.description}</p>
+                        </div>
+                        <span class="text-[10px] text-slate-400">Resolved: ${c.date}</span>
+                    </div>
+                `).join('');
+            }
+            updateStats();
+        }
+
+        function toggleResolvedArchive() {
+            const container = document.getElementById('resolved-archive-container');
+            const chevron = document.getElementById('archive-chevron');
+            container.classList.toggle('hidden');
+            chevron.classList.toggle('rotate-180');
+        }
+
+        function getPriorityBadge(priority) {
+            if (priority === 'Emergency') return `<span class="px-1.5 py-0.5 bg-red-100 text-red-700 text-[9px] font-extrabold rounded">Emergency</span>`;
+            if (priority === 'High') return `<span class="px-1.5 py-0.5 bg-rose-100 text-rose-700 text-[9px] font-bold rounded">High</span>`;
+            if (priority === 'Medium') return `<span class="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-bold rounded">Medium</span>`;
+            return `<span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-bold rounded">Low</span>`;
+        }
+
+        function updateStatus(id, newStatus) {
+            const complaint = complaints.find(c => c.id === id);
+            if (complaint) {
+                complaint.status = newStatus;
+                if (newStatus === 'Resolved') {
+                    complaint.resolvedTimestamp = Date.now();
+                }
+                saveData();
+                renderStaffComplaints();
+                updateStats();
+                showToast(`Complaint #${id} marked as ${newStatus}`, 'success');
+            }
+        }
+
+        function updateStats() {
+            const activeList = complaints.filter(c => c.status !== 'Resolved');
+            const pending = activeList.filter(c => c.status === 'Approved' || c.status === 'Submitted').length;
+            const progress = activeList.filter(c => c.status === 'In Progress').length;
+            const resolvedCount = complaints.filter(c => c.status === 'Resolved').length;
+
+            document.getElementById('stat-total').innerText = activeList.length;
+            document.getElementById('stat-pending').innerText = pending;
+            document.getElementById('stat-progress').innerText = progress;
+            document.getElementById('stat-resolved').innerText = resolvedCount;
+        }
+
+        function showToast(msg, type) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `p-3 rounded-lg shadow-lg text-xs font-bold text-white ${type === 'success' ? 'bg-emerald-600' : 'bg-slate-900'}`;
+            toast.innerText = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+    </script>
+</body>
+</html>
+
